@@ -10,14 +10,6 @@ from cairn.schemas.hike import HikeEntryCreate, HikeEntryRead
 router = APIRouter(prefix="/hikes", tags=["hikes"])
 
 
-def _get_or_create_tag(db: Session, name: str) -> Tag:
-    tag = db.query(Tag).filter(Tag.name == name).first()
-    if not tag:
-        tag = Tag(name=name)
-        db.add(tag)
-    return tag
-
-
 @router.post("/", response_model=HikeEntryRead, status_code=201)
 def create_hike(payload: HikeEntryCreate, db: Session = Depends(get_db)):
     entry = Entry(
@@ -25,8 +17,7 @@ def create_hike(payload: HikeEntryCreate, db: Session = Depends(get_db)):
         timestamp=payload.timestamp,
         notes=payload.notes,
     )
-    for tag_name in payload.tags:
-        entry.tags.append(_get_or_create_tag(db, tag_name))
+    entry.tags = _get_or_create_tag(db, payload.tags)
     entry.hike = Hike(**payload.hike.model_dump())
     db.add(entry)
     db.commit()
