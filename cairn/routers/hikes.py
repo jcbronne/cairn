@@ -6,6 +6,7 @@ from cairn.database import get_db
 from cairn.models.entry import Entry, EntryType, Tag
 from cairn.models.hike import Hike
 from cairn.schemas.hike import HikeEntryCreate, HikeEntryRead
+from cairn.routers.get_tags import _get_or_create_tag
 
 router = APIRouter(prefix="/hikes", tags=["hikes"])
 
