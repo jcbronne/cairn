@@ -75,5 +75,56 @@ def list_hikes(
 # Games, media, workouts, mood — TODO: implement following the hikes pattern
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Games
+# ---------------------------------------------------------------------------
+
+@games_app.command("log")
+def log_game(
+    title: Optional[str] = typer.Option(None, "--title", "-t", help="Game name"),
+    platform: Optional[str] = typer.Option(None, "--platform", "-p", help="Platform game is played on"),
+    status: Optional[str] = typer.Option(None, "--status", "-s", help="backlog/playing/complted/dropped"),
+    hours: Optional[int] = typer.Option(None, "--hours", "-h", help="Hours invested in game"),
+    rating: Optional[int] = typer.Option(None, "--rating", "-r"),
+    notes: Optional[str] = typer.Option(None, "--notes", "-n"),
+    tags: Optional[str] = typer.Option(None, "--tags", help="Comma-separated tags"),
+):
+    """Log a game."""
+    payload = {
+        "timestamp": datetime.now().isoformat(),
+        "notes": notes,
+        "tags": [t.strip() for t in tags.split(",")] if tags else [],
+        "game": {
+            "title": title,
+            "platform": platform,
+            "status": status,
+            "hours": hours,
+            "rating": rating,
+        },
+    }
+    r = httpx.post(f"{API_BASE}/games/", json=payload)
+    r.raise_for_status()
+    typer.echo(f"Logged game #{r.json()['id']}")
+
+
+@games_app.command("list")
+def list_games(
+    tag: Optional[str] = typer.Option(None, "--tag"),
+    limit: int = typer.Option(10, "--limit", "-n"),
+):
+    """List recent games."""
+    params: dict = {"limit": limit}
+    if tag:
+        params["tag"] = tag
+    r = httpx.get(f"{API_BASE}/games/", params=params)
+    r.raise_for_status()
+    for entry in r.json():
+        game = entry.get("game", {})
+        title = game.get("title") or "unnamed"
+        status = game.get("status")
+        ts = entry["timestamp"][:10]
+        typer.echo(f"[{entry['id']}] {ts}  {title} {status}")
+
+
 if __name__ == "__main__":
     app()
